@@ -10,7 +10,7 @@ st.write("Upload an image of a handwritten digit to get a prediction.")
 model_path = "67102010509_mnist_model.keras"
 
 
-# Cache the model so it isn't reloaded on every rerun
+# Cache โมเดลไว้ในหน่วยความจำเพื่อไม่ต้องโหลดใหม่ทุกครั้งที่กดปุ่ม
 @st.cache_resource
 def load_model(path):
     return tf.keras.models.load_model(path)
@@ -29,37 +29,37 @@ else:
 
     if uploaded_file is not None:
         try:
-            # Load the image
+            # Load และแสดงรูปภาพ
             img = Image.open(uploaded_file)
-
-            # FIX: Updated keyword argument from use_column_width to use_container_width
             st.image(img, caption="Uploaded Image", use_container_width=True)
 
-            st.write("Classifying...")
+            # ประมวลผลและทำนายผลด้วย st.spinner (จะซ่อนข้อความโหลดเมื่อทำงานเสร็จ)
+            with st.spinner("Classifying..."):
+                # Convert to grayscale
+                img_gray = img.convert("L")
 
-            # Convert to grayscale
-            img_gray = img.convert("L")
+                # Resize to 28x28 pixels
+                img_resized = img_gray.resize((28, 28))
 
-            # Resize to 28x28 pixels
-            img_resized = img_gray.resize((28, 28))
+                # Convert to numpy array
+                img_array = np.array(img_resized)
 
-            # Convert to numpy array
-            img_array = np.array(img_resized)
+                # Normalize pixel values [0, 255] -> [0, 1]
+                img_array = img_array.astype("float32") / 255.0
 
-            # Normalize pixel values from [0, 255] to [0, 1]
-            img_array = img_array.astype("float32") / 255.0
+                # Reshape (1, 28, 28) สำหรับส่งให้โมเดล
+                img_array = img_array.reshape(1, 28, 28)
 
-            # Reshape for model prediction (add batch dimension)
-            img_array = img_array.reshape(1, 28, 28)
+                # Make prediction
+                prediction = model.predict(img_array)
 
-            # Make a prediction
-            prediction = model.predict(img_array)
+                # ดึงตัวเลขที่มีความน่าจะเป็นสูงสุด และคำนวณ % ความมั่นใจ
+                predicted_digit = np.argmax(prediction)
+                confidence = np.max(prediction) * 100
 
-            # Get the predicted digit
-            predicted_digit = np.argmax(prediction)
-
+            # แสดงผลลัพธ์พร้อมความมั่นใจ (%)
             st.success(
-                f"The model predicts the digit is: **{predicted_digit}**"
+                f"The model predicts the digit is: **{predicted_digit}** (Confidence: {confidence:.2f}%)"
             )
 
         except Exception as e:
